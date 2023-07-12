@@ -1,12 +1,15 @@
 package uz.turgunboyevjurabek.firebase_register
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.View
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.core.widget.addTextChangedListener
 import com.google.firebase.FirebaseException
@@ -50,8 +53,25 @@ class MainActivity2 : AppCompatActivity() {
         }
 
         binding.refreshing.setOnClickListener {
+            binding.edtPossword.text?.clear()
             sendVerificationCode(number)
+            binding.thtTime.visibility=View.VISIBLE
+            binding.refreshing.visibility=View.GONE
+            count=0
         }
+        //Kelgan smsni avtomatik o'qib olish
+        binding.edtPossword.setOnEditorActionListener { v, actionId, event ->
+        if (actionId==EditorInfo.IME_ACTION_DONE){
+            verifyCode()
+            val view=currentFocus
+            if (view!=null){
+                val imm:InputMethodManager=getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.hideSoftInputFromWindow(view.windowToken,0)
+            }
+        }
+            true
+        }
+
     }
     val runneble=object :Runnable{
         override fun run() {
@@ -99,6 +119,7 @@ class MainActivity2 : AppCompatActivity() {
     private fun verifyCode(){
         val code=binding.edtPossword.text.toString()
         if (code.length==6){
+            binding.edtPossword.clearFocus()
             val credential=PhoneAuthProvider.getCredential(storedVerificationId,code)
             signInWithPhoneAuthCredential(credential)
         }
@@ -107,8 +128,12 @@ class MainActivity2 : AppCompatActivity() {
         auth.signInWithCredential(credential)
             .addOnCompleteListener {
                 if (it.isSuccessful){
+                    binding.thtTime.visibility=View.GONE
                     Toast.makeText(this, "Mufaqqiyatli", Toast.LENGTH_SHORT).show()
-
+                    val number=intent.getStringExtra("key_number")
+                    val intent= Intent(this,MainActivity3::class.java)
+                    intent.putExtra("key_number2",number)
+                    startActivity(intent)
                 }else{
                     Toast.makeText(this, "Mufaqiyatsiz", Toast.LENGTH_SHORT).show()
                     if (it.exception is FirebaseAuthInvalidCredentialsException){
